@@ -59,21 +59,6 @@ void singlemul(int* r, const matrix m1, const matrix m2, const int i, const int 
   }
 }
 
-void* launch_thread(void *arg){ /* Lance la multiplication en lançant un thread*/
-  args arguments = *(args*) arg;
-  matrix M1 = arguments.P;
-  matrix M2 = arguments.Q;
-  int *R, k, off;
-  R = calloc(arguments.steps, sizeof(int));
-
-  off = 0;
-
-  for  (k = arguments.k * arguments.steps; k < (arguments.k + 1)*arguments.steps; ++k) {
-    singlemul(R, M1, M2, k / M2->m, k % M2->m, off);
-    ++off;
-  }
-  return R;
-}
 
 void matmul(matrix r, matrix m1, matrix m2){ /* Fais une multiplication de matrices */
   if (m1->m != m2->n || r->n != m1->n || r->m != m2->m) {
@@ -84,7 +69,13 @@ void matmul(matrix r, matrix m1, matrix m2){ /* Fais une multiplication de matri
 
   for(i = 0; i < m1->n; ++i) {
     for(j = 0; j < m2->m; ++j) {
-      r->mat[i * r->n + j] = 0;
+      r->mat[i * r->n + j] = 0;      
+    }
+  }
+  
+#pragma omp parallel for collapse(3)
+  for(i = 0; i < m1->n; ++i) {
+    for(j = 0; j < m2->m; ++j) {
       for(k = 0; k < m1->m; ++k) {
         r->mat[i * r->m + j] += m1->mat[i * m1->m + k]*m2->mat[k * m2->m + j];
       }
@@ -98,7 +89,7 @@ int main (int argc, char **argv){
     return 1;
   }
 
-  matrix *M;
+  matrix *M, out;
   int *R;
   int nthreads;
   nthreads = atoi(argv[1]);
@@ -129,56 +120,15 @@ int main (int argc, char **argv){
 
   n = M[0]->n;
   m = M[1]->m;
-  pthread_t* st;
-  st = calloc(nthreads, sizeof(pthread_t));
-  args* arguments;
-  arguments = calloc(nthreads, sizeof(struct args));
-  int **retour;
-  retour = calloc(nthreads + 1, sizeof(int*));
-  for(i = 0; i < nthreads; ++i) {
-    arguments[i].P = M[0];
-    arguments[i].Q = M[1];
-    arguments[i].k = i;
-    arguments[i].steps = m*n/nthreads;
-  }
-  int remain = (m*n)%nthreads;
-  int off;
-  retour[nthreads] = calloc(remain, sizeof(retour));
 
+  out = calloc(1, sizeof(struct matrix));
+  matrix_init(out, n, m);
 
-  off = 0;
-#pragma omp parallel for num_threads(4)
-  for (i = arguments[0].steps * nthreads; i < m*n; ++i){
-    singlemul(retour[nthreads], M[0], M[1], i / m, i % m, off);
-    ++off;
-  }
+  matmul(out, M[0], M[1]);
 
-  for(i = 0; i < nthreads; ++i) {
-    pthread_create(st+i, NULL, &launch_thread, (void**) &arguments[i]);
-  }
-  for(i = 0; i < nthreads; ++i)
-    pthread_join(st[i], (void**) &retour[i]);
-  R = calloc(n*m, sizeof(int));
-  for(i = 0; i < nthreads; ++i) {
-    for(j = 0; j < arguments[0].steps; ++j) {
-      R[i*arguments[0].steps + j] = ((int*) retour[i])[j];
-    }
-  }
-  for(j = 0; j < remain; ++j) {
-    R[nthreads*arguments[0].steps + j] = ((int*) retour[nthreads])[j];
-  }
-  matrix_print2(R, n, m);
-  for(i = 0; i < nthreads; ++i) {
-    free(retour[i]);
-  }
-  free(retour[nthreads]);
-  free(retour);
-  for(i = 0; i < nmatrices; ++i)
-    matrix_free(M[i]);
+  matrix_print(out);
+
   free(M);
-  free(R);
-  free(st);
-  free(arguments);
 
   return 0;
 }
