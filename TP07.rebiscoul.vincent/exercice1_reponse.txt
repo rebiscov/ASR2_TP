@@ -1,0 +1,9 @@
+Q2
+	Ma file est composée de deux listes, on veut éviter que lorsque un thread utilise une liste, un autre thread utilise l'autre liste.
+
+Q4
+	L'inconvénient avec un mutex est qu'on ne peut pas push et pop en même temps alors que c'est parfois faisable. Il faut donc utiliser deux mutex, un pour push et un pour pop
+
+Q5
+	J'ai utilisé un 3ème mutex qui met en attente un thread si celui-ci tente de pop une file vide
+
