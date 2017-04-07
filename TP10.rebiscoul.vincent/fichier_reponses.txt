@@ -4,3 +4,7 @@ Exercice 1:
 
 Exercice 2:
 	 2) J'ai un "error while loading shared libraries". Pour fixer cela, on change la variable LD_LIBRARY_PATH
+
+Exercice 3:
+	 2) ls n'affiche plus rien car la function readdir qu'on a codé ne retourne jamais rien
+	 3) La librairie statique est compilé avec ls_static donc elle est prioritaire
