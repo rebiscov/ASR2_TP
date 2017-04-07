@@ -1,0 +1,6 @@
+Exercice 1:
+	 2) Une librairie statique est un ensembe de fonctions, de variables, de define stocké dans un fichier et utilisé à la compilation
+	 4) -l sert à indiquer la librairie à importer, -L. dit à gcc de chercher dans le dossier courant pour trouver les librairies en plus des endroits standards
+
+Exercice 2:
+	 2) J'ai un "error while loading shared libraries". Pour fixer cela, on change la variable LD_LIBRARY_PATH

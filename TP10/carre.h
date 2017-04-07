@@ -1,0 +1,1 @@
+int carre(int n);
