@@ -29,7 +29,7 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
 
             webpage = urllib.request.urlopen(host + req)
             self.request.sendall(self.data+b"\n")
-            self.request.sendall(bytes(mystring, 'utf-8'))
+            self.request.sendall(bytes(webpage, 'utf-8'))
             
 
 if __name__ == "__main__":
