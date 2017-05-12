@@ -34,6 +34,9 @@ void get_host(const char infos[], char host[], char port[]){
 
 void send_all(int argc, char **argv, char *message, int sock){
   char port[20], host[20];
+  char msg[500];
+  int id;
+  
   for (unsigned int i = 3; i < argc; i++){
     get_host(argv[i], host, port);
     
@@ -46,18 +49,22 @@ void send_all(int argc, char **argv, char *message, int sock){
       .sin_addr = sin_addr_rc
     };
 
-    if (sendto(sock, message, 8, 0, (const struct sockaddr *) &addr_rc, sizeof(addr_rc)) == -1)
+    id = rand()%1073741824;
+    sprintf(msg, "%d %s", id, message);
+    
+    if (sendto(sock, msg, 500, 0, (const struct sockaddr *) &addr_rc, sizeof(addr_rc)) == -1)
       printf("couldn't send message to %s\n", argv[i]);
   }
 }
 
 void* write_to(void *in){
-  char message[250];
-  int len;
+  char *message = malloc(sizeof(char)*500);
+  size_t len;
   struct send_infos* s = (struct send_infos*)in;
   
   while(cont){
-    getline(&message, 250, stdin);
+    getline(&message, &len, stdin);
+    message[len] = '\0';
     send_all(s->argc, s->argv, message, s->sock);
   }
   
@@ -65,7 +72,7 @@ void* write_to(void *in){
 }
 
 int main(int argc, char **argv){
-  char message[250], src[20];
+  char message[500], src[20];
   memset(sent, 0, sizeof(int));
   
   if (argc < 3){
@@ -92,10 +99,9 @@ int main(int argc, char **argv){
   
   bind(sock, (const struct sockaddr *) &addr, sizeof(addr));
 
-  sprintf(message, "%d Bonjour de la part de %s\n", rand()%1073741824, argv[1]);
+  sprintf(message, "Bonjour de la part de %s\n", argv[1]);
   
   send_all(argc, argv, message, sock);
-  send_all(argc, argv, "TEST\n", sock);
 
   struct sockaddr_in addr_sd;
   socklen_t len;
@@ -111,9 +117,15 @@ int main(int argc, char **argv){
   pthread_create(&id, NULL, write_to, &s);
   
   while(cont){
-    recvfrom(sock, message, 250, 0,(struct sockaddr*) &addr_sd, &len);
+    recvfrom(sock, message, 500, 0,(struct sockaddr*) &addr_sd, &len);
     inet_ntop(AF_INET, &(addr_sd.sin_addr), src, INET_ADDRSTRLEN);
     printf("%s:%d %s", src, ntohs(addr_sd.sin_port), message);
+    int a = atoi(strtok(message, " "));
+    
+    if (sent[a]){
+      sent[a] = 1;
+      send_all(argc, argv, message, sock);
+    }
   }
   
   return 0;
