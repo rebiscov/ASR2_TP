@@ -11,7 +11,7 @@
 int sent[1073741824];
 int cont = 1;
 
-void send_all(int argv, char *argv[], char *message){
+void send_all(int argc, char *argv[], char *message, int sock){
   for (unsigned int i = 3; i < argc; i++){
     struct in_addr sin_addr_rc;
     inet_pton(AF_INET, strtok(argv[i], ":"), &(sin_addr_rc.s_addr));
@@ -57,18 +57,7 @@ int main(int argc, char *argv[]){
   sprintf(message, "%d Bonjour de la part de %s\n", rand()%1073741824, argv[1]);
   
   for (unsigned int i = 3; i < argc; i++){
-    struct in_addr sin_addr_rc;
-    inet_pton(AF_INET, strtok(argv[i], ":"), &(sin_addr_rc.s_addr));
-    
-    struct sockaddr_in addr_rc = {
-      .sin_family = AF_INET,
-      .sin_port = htons(atoi(strtok(NULL, ":"))),
-      .sin_addr = sin_addr_rc
-    };
-
-    sprintf(message, "%d Bonjour de la part de %s\n", rand()%1073741824, argv[1]);
-    if (sendto(sock, message, 8, 0, (const struct sockaddr *) &addr_rc, sizeof(addr_rc)) == -1)
-      printf("couldn't send message to %s\n", argv[i]);
+    send_all(argc, argv, message, sock);
   }
 
   struct sockaddr_in addr_sd;
