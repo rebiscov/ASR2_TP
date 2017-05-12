@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <unistd.h>
+#include <pthread.h>
 
 typedef struct retrait retrait;
 struct retrait{

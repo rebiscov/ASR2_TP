@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <pthread.h>
+#include <unistd.h>
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <string.h>
@@ -11,14 +13,36 @@
 int sent[1073741824];
 int cont = 1;
 
-void send_all(int argc, char *argv[], char *message, int sock){
+struct send_infos{
+  int sock;
+  int argc;
+  char **argv;
+};
+
+void get_host(const char infos[], char host[], char port[]){
+  unsigned int i;
+  for (i = 0; infos[i] != ':'; i++);
+  host[i] = '\0';
+
+  for (unsigned int j = 0; j < i; j++)
+    host[j] = infos[j];
+  for (unsigned int j = i + 1; infos[j] != '\0'; j++){
+    port[j-i-1] = infos[j];
+    port[j-i] = '\0';
+  }
+}
+
+void send_all(int argc, char **argv, char *message, int sock){
+  char port[20], host[20];
   for (unsigned int i = 3; i < argc; i++){
+    get_host(argv[i], host, port);
+    
     struct in_addr sin_addr_rc;
-    inet_pton(AF_INET, strtok(argv[i], ":"), &(sin_addr_rc.s_addr));
+    inet_pton(AF_INET, host, &(sin_addr_rc.s_addr));
     
     struct sockaddr_in addr_rc = {
       .sin_family = AF_INET,
-      .sin_port = htons(atoi(strtok(NULL, ":"))),
+      .sin_port = htons(atoi(port)),
       .sin_addr = sin_addr_rc
     };
 
@@ -27,7 +51,23 @@ void send_all(int argc, char *argv[], char *message, int sock){
   }
 }
 
-int main(int argc, char *argv[]){
+void* write_to(void *in){
+  char message[250];
+  int len;
+  struct send_infos* s = (struct send_infos*)in;
+  
+  while(cont){
+    scanf("%s", message);
+    len = strlen(message);
+    message[len] = '\n';
+    message[len+1] = '\0';
+    send_all(s->argc, s->argv, message, s->sock);
+  }
+  
+  return NULL;
+}
+
+int main(int argc, char **argv){
   char message[250], src[20];
   memset(sent, 0, sizeof(int));
   
@@ -46,6 +86,7 @@ int main(int argc, char *argv[]){
   struct in_addr sin_addr = {
     .s_addr = INADDR_ANY
   };
+  
   struct sockaddr_in addr = {
     .sin_family = AF_INET,
     .sin_port = htons(atoi(argv[2])),
@@ -56,12 +97,22 @@ int main(int argc, char *argv[]){
 
   sprintf(message, "%d Bonjour de la part de %s\n", rand()%1073741824, argv[1]);
   
-  for (unsigned int i = 3; i < argc; i++){
-    send_all(argc, argv, message, sock);
-  }
+  send_all(argc, argv, message, sock);
+  send_all(argc, argv, "TEST\n", sock);
 
   struct sockaddr_in addr_sd;
   socklen_t len;
+
+  pthread_t id;
+  
+  struct send_infos s = {
+    .argc = argc,
+    .argv = argv,
+    .sock = sock
+  };
+
+  pthread_create(&id, NULL, write_to, &s);
+  
   while(cont){
     recvfrom(sock, message, 250, 0,(struct sockaddr*) &addr_sd, &len);
     inet_ntop(AF_INET, &(addr_sd.sin_addr), src, INET_ADDRSTRLEN);
