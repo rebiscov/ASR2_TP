@@ -57,10 +57,7 @@ void* write_to(void *in){
   struct send_infos* s = (struct send_infos*)in;
   
   while(cont){
-    scanf("%s", message);
-    len = strlen(message);
-    message[len] = '\n';
-    message[len+1] = '\0';
+    getline(&message, 250, stdin);
     send_all(s->argc, s->argv, message, s->sock);
   }
   
