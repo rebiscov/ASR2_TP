@@ -7,7 +7,7 @@
 
 void get_ip(const char *domain, const char *port, struct addrinfo **res){
   struct addrinfo hints;
-  int err;
+  int err, sock;
 
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_family = AF_INET;
